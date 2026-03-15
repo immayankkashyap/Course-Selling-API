@@ -10,6 +10,8 @@ config();
 
 const CourseRouter = Router();
 
+
+// create courses (only admins/instructor)
 CourseRouter.post('/courses', authMiddleware, async (req: Request, res: Response) => {
     const result = createCourseSchema.safeParse(req.body)
     if (req.role != 'Instructor') {
@@ -17,18 +19,18 @@ CourseRouter.post('/courses', authMiddleware, async (req: Request, res: Response
             err: "Unauthorized access"
         })
     } else if (!result.success) {
-        console.log("Invalid inout")
-        res.status(403).send({
+        console.log("Invalid input")
+        res.status(400).send({
             err: "Invalid input!"
         })
     } else {
         const courseInfo: {
-            instructorId: string,
+            InstructorId: string,
             title: string,
             price: number,
             description: string
         } = {
-            instructorId: req.userId!,
+            InstructorId: req.userId!,
             title: result.data.title!,
             price: result.data?.price!,
             description: result.data?.description!,
@@ -45,7 +47,7 @@ CourseRouter.post('/courses', authMiddleware, async (req: Request, res: Response
 
         } catch (err) {
             console.log(err)
-            return res.status(400).send({
+            return res.status(500).send({
                 err,
             })
         }
@@ -53,6 +55,7 @@ CourseRouter.post('/courses', authMiddleware, async (req: Request, res: Response
 
 })
 
+// get all available courses
 CourseRouter.get('/courses', async (req: Request, res: Response) => {
     try {
         const AllCourses = await prisma.course.findMany({})
@@ -67,24 +70,34 @@ CourseRouter.get('/courses', async (req: Request, res: Response) => {
     }
 })
 
-CourseRouter.get('/courses/:id', async (req: Request, res: Response) => {
+// open a course and show all underline lessons
+CourseRouter.get('/courses/:id', authMiddleware, async (req: Request, res: Response) => {
     const courseId = req.params.id;
     try {
         const course = await prisma.course.findUnique({
             where: { id: courseId as string },
             include: {
-                lessons: true
+                lessons: true,
+                purchases: true,
             }
         })
+        
+        // Check if course exists first
         if (!course) {
             return res.status(404).send({
                 message: "Course not found!"
             })
-        } else {
-            return res.status(200).send({
-                course,
-            })
         }
+
+        //check if user has purchased access
+        const hasAccess = course.purchases.some(p => p.userId === req.userId);
+        if (!hasAccess) {
+            return res.status(403).send({ err: "Purchase required" });
+        }
+
+        return res.status(200).send({
+            course,
+        })
     } catch (err) {
         return res.status(401).send({
             err,
@@ -92,7 +105,9 @@ CourseRouter.get('/courses/:id', async (req: Request, res: Response) => {
     }
 })
 
-CourseRouter.patch('/courses/:id', async (req: Request, res: Response) => {
+
+// only instructor
+CourseRouter.patch('/courses/:id', authMiddleware, async (req: Request, res: Response) => {
     const courseId = req.params.id;
     const role = req.role;
     const result = createCourseSchema.partial().safeParse(req.body)
@@ -123,7 +138,9 @@ CourseRouter.patch('/courses/:id', async (req: Request, res: Response) => {
 
 })
 
-CourseRouter.delete('/courses/:id', async (req: Request, res: Response) => {
+
+// can be deleted only by instructor
+CourseRouter.delete('/courses/:id', authMiddleware, async (req: Request, res: Response) => {
     const courseId = req.params.id;
     const role = req.role;
     if (role == "Instructor") {

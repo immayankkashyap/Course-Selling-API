@@ -32,7 +32,7 @@ userRouter.post('/auth/signup', async (req: Request, res: Response) => {
         email: userData.email,
         password: hashpassword,
         name: userData.name,
-        role: userData.role,
+        role: userData.role as 'STUDENT' | 'INSTRUCTOR',
       },
     });
 
@@ -80,7 +80,7 @@ userRouter.post('/auth/login',async (req:Request, res:Response) => {
                 }
             })
         } else {
-            res.status(408).send({
+            res.status(404).send({
                 err:"User not found!"
             })
         }

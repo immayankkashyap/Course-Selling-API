@@ -23,10 +23,10 @@ const createCourseSchema = z.object({
 const createLessonSchema = z.object({
     title: z.string(),
     content: z.string(),
-    courseId: z.uuid(),
+    courseId: z.string(),   
 })
 
-const purchaseCourseId = z.object({
+const purchaseCourseSchema = z.object({
     courseId: z.uuid(),
 })
 
@@ -35,5 +35,5 @@ export {
     signupSchema,
     createCourseSchema,
     createLessonSchema,
-    purchaseCourseId,
+    purchaseCourseSchema,
 }
