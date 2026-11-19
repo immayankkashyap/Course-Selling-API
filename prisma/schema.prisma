@@ -44,7 +44,7 @@ model Purchase {
   id        String   @id @default(uuid())
   userId    String
   courseId  String
-  createdAt DateTime
+  createdAt DateTime @default(now())
   course    Course   @relation(fields: [courseId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 }
